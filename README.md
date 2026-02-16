@@ -15,11 +15,18 @@ A FastAPI-based backend with user registration, login, and file listing.
 - `app/utils/` - Helper modules
 - `user/` - User data
 
-## Running
+## Running Locally
 
 ```bash
 pip install fastapi uvicorn python-multipart pyotp
 uvicorn app.main:app --reload
+```
+
+## Running with Docker
+
+```bash
+docker build -t simple-user-api .
+docker run -p 8000:8000 simple-user-api
 ```
 
 ## Swagger Docs
