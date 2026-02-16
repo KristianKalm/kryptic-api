@@ -1,0 +1,13 @@
+{
+  "api_version": 0.01,
+  "apps": [
+    {
+      "name": "Wealthtracker",
+      "default_max_mb": 20
+    },
+    {
+      "name": "Mylif",
+      "default_max_mb": 200
+    }
+  ]
+}
