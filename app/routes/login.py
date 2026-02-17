@@ -13,10 +13,39 @@ from app.utils.auth_utils import verify_app, FILE_PATH_TOKENS, FILE_PATH_USER, C
     CONST_TOKEN, verify_token, CONST_PRIVATE_KEY, CONST_SEED, CONST_PUBLIC_KEY, format_tokens_response
 from app.utils.conf_utils import get_user_data_path
 from app.utils.ota_utils import verify_ota_pin
-from app.utils.time_utils import get_utc_timestamp
+from app.utils.time_utils import get_utc_timestamp, get_utc_timestamp_ms
 from app import messages
 
 router = APIRouter()
+
+FILE_LOGIN_ATTEMPTS = "login_attempts.json"
+_MAX_15MIN = 3
+_MAX_24H = 20
+_WINDOW_15MIN_MS = 15 * 60 * 1000
+_WINDOW_24H_MS = 24 * 60 * 60 * 1000
+
+
+def check_and_record_login_attempt(user_path: Path):
+    now = get_utc_timestamp_ms()
+    attempts_file = user_path / FILE_LOGIN_ATTEMPTS
+
+    attempts = []
+    if attempts_file.exists():
+        with open(attempts_file) as f:
+            attempts = json.load(f)
+
+    cutoff_24h = now - _WINDOW_24H_MS
+    attempts = [ts for ts in attempts if ts > cutoff_24h]
+
+    if len([ts for ts in attempts if ts > now - _WINDOW_15MIN_MS]) >= _MAX_15MIN:
+        raise HTTPException(status_code=429, detail=messages.tooManyRequests)
+
+    if len(attempts) >= _MAX_24H:
+        raise HTTPException(status_code=429, detail=messages.tooManyRequests)
+
+    attempts.append(now)
+    with open(attempts_file, "w") as f:
+        json.dump(attempts, f)
 
 
 @router.post("/login", tags=["auth"])
@@ -82,6 +111,9 @@ def create_token(user: User, app=Depends(verify_app)):
     user_file = user_path / FILE_PATH_USER
     if not user_file.exists():
         raise HTTPException(status_code=404, detail=messages.userNotFound)
+
+    check_and_record_login_attempt(user_path)
+
     with open(user_file) as f:
         user_json = json.load(f)
         stored_pw = user_json.get(CONST_PASSWORD)
@@ -93,8 +125,18 @@ def create_token(user: User, app=Depends(verify_app)):
         if not verify_ota_pin(stored_ota, user.pin):
             raise HTTPException(status_code=401, detail=messages.wrongPin)
 
-    if hashlib.sha512((user.timestamp + stored_pw).encode()).hexdigest() != user.password:
+    if user.timestamp is None or abs(get_utc_timestamp_ms() - user.timestamp) > 3_600_000:
+        raise HTTPException(status_code=401, detail=messages.timestampExpired)
+
+    if user.timestamp <= user_json.get("last_login_timestamp", 0):
+        raise HTTPException(status_code=401, detail=messages.timestampExpired)
+
+    if hashlib.sha512((str(user.timestamp) + stored_pw).encode()).hexdigest() != user.password:
         raise HTTPException(status_code=401, detail=messages.invalidCredentials)
+
+    user_json["last_login_timestamp"] = user.timestamp
+    with open(user_file, "w") as f:
+        json.dump(user_json, f)
 
     unhashed_token, token_id = add_token(user_path, user.token_name)
     return {

@@ -5,12 +5,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
-from app.routes import register, files, usage, login, tokens, info, file, ota
-import logging
+from app.routes import register, files, usage, login, tokens, info, file, ota, account
 from app.utils.conf_utils import load_conf
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 load_conf()
 
@@ -19,9 +15,6 @@ app = FastAPI()
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    logging.error(f"Validation error for request to {request.url}")
-    logging.error(f"Request body: {await request.body()}")
-    logging.error(f"Validation errors: {exc.errors()}")
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors()},
@@ -49,3 +42,4 @@ app.include_router(file.router)
 app.include_router(files.router)
 app.include_router(usage.router)
 app.include_router(ota.router)
+app.include_router(account.router)

@@ -5,7 +5,7 @@ from app.models.auth import Auth
 from app.utils.conf_utils import get_conf, get_user_data_path
 import json
 
-from app.utils.time_utils import get_utc_timestamp
+from app.utils.time_utils import get_utc_timestamp, get_utc_timestamp_ms
 from app import messages
 
 FILE_PATH_TOKENS = "tokens.json"
@@ -43,12 +43,23 @@ def verify_token(
     user_path = get_user_data_path(x_auth_user, x_app)
     tokens_file = user_path / FILE_PATH_TOKENS
 
+    try:
+        ts = int(x_timestamp)
+    except ValueError:
+        raise HTTPException(status_code=401, detail=messages.invalidToken)
+
+    if abs(get_utc_timestamp_ms() - ts) > 3_600_000:
+        raise HTTPException(status_code=401, detail=messages.timestampExpired)
+
     if tokens_file.exists():
         with open(tokens_file) as f:
             tokens = json.load(f)
             for item in tokens:
                 token = sha512((x_timestamp + item["token"]).encode()).hexdigest()
                 if x_auth_token == token:
+                    if ts <= item.get("last_timestamp", 0):
+                        raise HTTPException(status_code=401, detail=messages.timestampExpired)
+                    item["last_timestamp"] = ts
                     item["last_used_at"] = get_utc_timestamp()
                     with open(tokens_file, "w") as f:
                         json.dump(tokens, f)

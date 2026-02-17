@@ -52,10 +52,11 @@ def save_file(
     - **500**: Server error during file write operation
     """
     user_path = get_user_data_path(auth.username, auth.app)
-    files_path = user_path / folder
-    files_path.mkdir(parents=True, exist_ok=True)
+    file_location = (user_path / folder / filename).resolve()
+    if not str(file_location).startswith(str(user_path.resolve()) + "/"):
+        raise HTTPException(status_code=400, detail=messages.invalidPath)
 
-    file_location = files_path / filename
+    file_location.parent.mkdir(parents=True, exist_ok=True)
     with open(file_location, "w", encoding="utf-8") as f:
         f.write(data)
 
@@ -95,7 +96,9 @@ def get_file(
     - **500**: Server error during file read operation
     """
     user_path = get_user_data_path(auth.username, auth.app)
-    file_path = user_path / folder / filename
+    file_path = (user_path / folder / filename).resolve()
+    if not str(file_path).startswith(str(user_path.resolve()) + "/"):
+        raise HTTPException(status_code=400, detail=messages.invalidPath)
 
     if not file_path.exists():
         raise HTTPException(status_code=404, detail=messages.fileNotFound)
@@ -144,7 +147,9 @@ def delete_file(
     - **500**: Server error during file deletion operation
     """
     user_path = get_user_data_path(auth.username, auth.app)
-    file_path = user_path / folder / filename
+    file_path = (user_path / folder / filename).resolve()
+    if not str(file_path).startswith(str(user_path.resolve()) + "/"):
+        raise HTTPException(status_code=400, detail=messages.invalidPath)
 
     if not file_path.exists():
         raise HTTPException(status_code=404, detail=messages.fileNotFound)

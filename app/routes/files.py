@@ -6,6 +6,7 @@ from app.models.auth import Auth
 from app.utils.auth_utils import verify_token
 
 from app.utils.conf_utils import get_user_data_path
+from app import messages
 
 
 class FileItem(BaseModel):
@@ -114,7 +115,10 @@ def get_files(
     - **422**: Invalid query parameters (e.g., negative start, limit > 1000)
     - **500**: Server error during directory read operation or file read error
     """
-    user_path = get_user_data_path(auth.username, auth.app) / folder
+    user_base = get_user_data_path(auth.username, auth.app)
+    user_path = (user_base / folder).resolve()
+    if not str(user_path).startswith(str(user_base.resolve()) + "/"):
+        raise HTTPException(status_code=400, detail=messages.invalidPath)
     if not user_path.exists() or not user_path.is_dir():
         return {
             "files": [],
@@ -177,12 +181,18 @@ def post_files(
     files: List[FileItem],
     auth: Auth = Depends(verify_token)
 ):
-    user_path = get_user_data_path(auth.username, auth.app) / folder
+    user_base = get_user_data_path(auth.username, auth.app)
+    user_path = (user_base / folder).resolve()
+    if not str(user_path).startswith(str(user_base.resolve()) + "/"):
+        raise HTTPException(status_code=400, detail=messages.invalidPath)
     user_path.mkdir(parents=True, exist_ok=True)
 
     saved = []
     errors = []
     for file in files:
+        if "/" in file.name or "\\" in file.name:
+            errors.append({"name": file.name, "error": messages.invalidPath})
+            continue
         try:
             file_path = user_path / file.name
             file_path.write_text(file.data, encoding="utf-8")
