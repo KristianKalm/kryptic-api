@@ -5,7 +5,7 @@ WORKDIR /app
 COPY ./app /app/app
 COPY ./conf.json /app/conf.json
 
-RUN pip install fastapi uvicorn python-multipart pyotp
+RUN pip install fastapi uvicorn python-multipart pyotp slowapi
 
 EXPOSE 8000
 

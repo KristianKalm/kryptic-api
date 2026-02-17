@@ -3,6 +3,9 @@ from urllib.request import Request
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from starlette.responses import JSONResponse
 
 from app.routes import register, files, usage, login, tokens, info, file, ota, account
@@ -10,7 +13,10 @@ from app.utils.conf_utils import load_conf
 
 load_conf()
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.exception_handler(RequestValidationError)

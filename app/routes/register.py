@@ -1,7 +1,10 @@
 import hashlib
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 import json
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
 from app.models.user import User, Encrypted
 from app.routes.login import add_token
 from app.utils.auth_utils import verify_app, FILE_PATH_USER, CONST_PASSWORD, CONST_CREATED_AT, CONST_PRIVATE_KEY, \
@@ -11,10 +14,12 @@ from app.utils.time_utils import get_utc_timestamp
 from app import messages
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", tags=["auth"])
-def register(user: User, app=Depends(verify_app)):
+@limiter.limit("3/15minutes;10/day")
+def register(request: Request, user: User, app=Depends(verify_app)):
     """
     Register a new user account.
 
