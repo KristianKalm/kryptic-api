@@ -44,7 +44,7 @@ def register(request: Request, user: User, app=Depends(verify_app)):
             "iv": "initialization_vector",
             "salt": "salt_value"
         },
-        "token_name": "My Device"  // Optional, name for initial session/device
+        "token_name": "PGP"  // Optional, pgp encrypted session/device name
     }
     ```
 

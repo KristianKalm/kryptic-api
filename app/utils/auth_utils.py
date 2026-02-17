@@ -63,7 +63,7 @@ def verify_token(
                     item["last_used_at"] = get_utc_timestamp()
                     with open(tokens_file, "w") as f:
                         json.dump(tokens, f)
-                    return Auth(username=x_auth_user, app=x_app)
+                    return Auth(username=x_auth_user, app=x_app, token_id=item["id"])
 
     raise HTTPException(status_code=401, detail=messages.invalidToken)
 

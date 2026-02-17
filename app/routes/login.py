@@ -64,10 +64,12 @@ def create_token(user: User, app=Depends(verify_app)):
         "username": "john_doe",
         "password": "sha512_hash_of_timestamp_plus_stored_password",
         "timestamp": "2024-01-15T10:30:00Z",
-        "pin": "123456",  // Optional, required only if OTA is enabled
-        "token_name": "My iPhone"  // Optional, name for this session/device
+        "pin": "123456"  // Optional, required only if OTA is enabled
     }
     ```
+
+    **Note**: `token_name` is not accepted at login. To name the session, use `PUT /token/name`
+    with a PGP-encrypted value after a successful login.
 
     **Note**: The created token will have a Unix timestamp (seconds since epoch) stored internally.
 
@@ -138,7 +140,7 @@ def create_token(user: User, app=Depends(verify_app)):
     with open(user_file, "w") as f:
         json.dump(user_json, f)
 
-    unhashed_token, token_id = add_token(user_path, user.token_name)
+    unhashed_token, token_id = add_token(user_path)
     return {
         CONST_TOKEN: unhashed_token,
         "token_id": token_id,
