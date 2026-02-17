@@ -126,10 +126,10 @@ def create_token(user: User, app=Depends(verify_app)):
             raise HTTPException(status_code=401, detail=messages.wrongPin)
 
     if user.timestamp is None or abs(get_utc_timestamp_ms() - user.timestamp) > 3_600_000:
-        raise HTTPException(status_code=401, detail=messages.timestampExpired)
+        raise HTTPException(status_code=408, detail=messages.timestampExpired)
 
     if user.timestamp <= user_json.get("last_login_timestamp", 0):
-        raise HTTPException(status_code=401, detail=messages.timestampExpired)
+        raise HTTPException(status_code=408, detail=messages.timestampExpired)
 
     if hashlib.sha512((str(user.timestamp) + stored_pw).encode()).hexdigest() != user.password:
         raise HTTPException(status_code=401, detail=messages.invalidCredentials)

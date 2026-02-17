@@ -49,7 +49,7 @@ def verify_token(
         raise HTTPException(status_code=401, detail=messages.invalidToken)
 
     if abs(get_utc_timestamp_ms() - ts) > 3_600_000:
-        raise HTTPException(status_code=401, detail=messages.timestampExpired)
+        raise HTTPException(status_code=408, detail=messages.timestampExpired)
 
     if tokens_file.exists():
         with open(tokens_file) as f:
@@ -58,7 +58,7 @@ def verify_token(
                 token = sha512((x_timestamp + item["token"]).encode()).hexdigest()
                 if x_auth_token == token:
                     if ts <= item.get("last_timestamp", 0):
-                        raise HTTPException(status_code=401, detail=messages.timestampExpired)
+                        raise HTTPException(status_code=408, detail=messages.timestampExpired)
                     item["last_timestamp"] = ts
                     item["last_used_at"] = get_utc_timestamp()
                     with open(tokens_file, "w") as f:
