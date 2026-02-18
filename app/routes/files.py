@@ -13,6 +13,10 @@ class FileItem(BaseModel):
     name: str
     data: str
 
+
+class FilesDeleteRequest(BaseModel):
+    files: List[str]
+
 router = APIRouter()
 
 
@@ -202,5 +206,75 @@ def post_files(
 
     return {
         "saved": saved,
+        "errors": errors
+    }
+
+
+@router.delete("/files/{folder:path}", tags=["file"])
+def delete_files(
+    folder: str,
+    req: FilesDeleteRequest,
+    auth: Auth = Depends(verify_token)
+):
+    """
+    Delete multiple files from a folder.
+
+    **Authentication Required**: Yes (via headers)
+
+    **Path Parameters**:
+    - **folder**: Folder path to delete files from (e.g., "documents", "messages/2024")
+
+    **Request Body** (JSON):
+    ```json
+    {
+        "files": ["file1.pgp", "file2.pgp", "file3.pgp"]
+    }
+    ```
+
+    **Response**:
+    ```json
+    {
+        "deleted": ["file1.pgp", "file2.pgp"],
+        "errors": [
+            {"name": "file3.pgp", "error": "file_not_found"}
+        ]
+    }
+    ```
+
+    **Behavior**:
+    - Deletes each file in the provided list from the specified folder
+    - Files not found are reported in errors, remaining files are still processed
+    - Filenames containing path separators (`/`, `\\`) are rejected as invalid
+    - Returns a summary of deleted files and any errors
+
+    **Error Responses**:
+    - **400**: Invalid folder path
+    - **401**: Invalid or missing authentication token
+    - **408**: Timestamp expired
+    - **422**: Invalid request body
+    """
+    user_base = get_user_data_path(auth.username, auth.app)
+    user_path = (user_base / folder).resolve()
+    if not str(user_path).startswith(str(user_base.resolve()) + "/"):
+        raise HTTPException(status_code=400, detail=messages.invalidPath)
+
+    deleted = []
+    errors = []
+    for name in req.files:
+        if "/" in name or "\\" in name:
+            errors.append({"name": name, "error": messages.invalidPath})
+            continue
+        file_path = user_path / name
+        if not file_path.exists():
+            errors.append({"name": name, "error": messages.fileNotFound})
+            continue
+        try:
+            file_path.unlink()
+            deleted.append(name)
+        except Exception as e:
+            errors.append({"name": name, "error": str(e)})
+
+    return {
+        "deleted": deleted,
         "errors": errors
     }
