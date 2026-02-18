@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.models.auth import Auth
-from app.utils.auth_utils import verify_token, FILE_PATH_USER, CONST_PASSWORD
+from app.utils.auth_utils import verify_token, FILE_PATH_USER, UserField
 
 from app.utils.conf_utils import get_user_data_path
 from app.utils.ota_utils import generate_ota_key, generate_ota_pin, verify_ota_pin
@@ -155,7 +155,7 @@ def delete_ota_key(req: OtaDeleteRequest, auth: Auth = Depends(verify_token)):
     if not stored_user.get("ota"):
         raise HTTPException(status_code=400, detail=messages.otaNotSetUp)
 
-    stored_pw = stored_user.get(CONST_PASSWORD)
+    stored_pw = stored_user.get(UserField.PASSWORD)
     if hashlib.sha512((req.timestamp + stored_pw).encode()).hexdigest() != req.password:
         raise HTTPException(status_code=401, detail=messages.invalidCredentials)
 

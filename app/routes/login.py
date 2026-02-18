@@ -9,8 +9,7 @@ from pydantic import BaseModel
 
 from app.models.auth import Auth
 from app.models.user import User, Encrypted
-from app.utils.auth_utils import verify_app, FILE_PATH_TOKENS, FILE_PATH_USER, CONST_PASSWORD, CONST_CREATED_AT, \
-    CONST_TOKEN, verify_token, CONST_PRIVATE_KEY, CONST_SEED, CONST_PUBLIC_KEY, format_tokens_response
+from app.utils.auth_utils import verify_app, FILE_PATH_TOKENS, FILE_PATH_USER, UserField, verify_token, format_tokens_response
 from app.utils.conf_utils import get_user_data_path
 from app.utils.ota_utils import verify_ota_pin
 from app.utils.time_utils import get_utc_timestamp, get_utc_timestamp_ms
@@ -118,7 +117,7 @@ def create_token(user: User, app=Depends(verify_app)):
 
     with open(user_file) as f:
         user_json = json.load(f)
-        stored_pw = user_json.get(CONST_PASSWORD)
+        stored_pw = user_json.get(UserField.PASSWORD)
         stored_ota = user_json.get("ota")
 
     if stored_ota is not None:
@@ -142,11 +141,11 @@ def create_token(user: User, app=Depends(verify_app)):
 
     unhashed_token, token_id = add_token(user_path)
     return {
-        CONST_TOKEN: unhashed_token,
+        UserField.TOKEN: unhashed_token,
         "token_id": token_id,
-        CONST_PRIVATE_KEY: Encrypted.model_validate_json(user_json.get(CONST_PRIVATE_KEY)),
-        CONST_SEED: Encrypted.model_validate_json(user_json.get(CONST_SEED)),
-        CONST_PUBLIC_KEY: user_json.get(CONST_PUBLIC_KEY),
+        UserField.PRIVATE_KEY: Encrypted.model_validate_json(user_json.get(UserField.PRIVATE_KEY)),
+        UserField.SEED: Encrypted.model_validate_json(user_json.get(UserField.SEED)),
+        UserField.PUBLIC_KEY: user_json.get(UserField.PUBLIC_KEY),
     }
 
 
@@ -155,8 +154,8 @@ def add_token(user_path: Path, token_name: str = None):
     token_id = str(uuid.uuid4())
     token = {
         "id": token_id,
-        CONST_TOKEN: unhashed_token,
-        CONST_CREATED_AT: get_utc_timestamp()
+        UserField.TOKEN: unhashed_token,
+        UserField.CREATED_AT: get_utc_timestamp()
     }
     if token_name:
         token["name"] = token_name

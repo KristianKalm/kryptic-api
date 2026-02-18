@@ -1,3 +1,4 @@
+from enum import StrEnum
 from hashlib import sha1, sha512
 
 from fastapi import Header, HTTPException
@@ -11,12 +12,14 @@ from app import messages
 FILE_PATH_TOKENS = "tokens.json"
 FILE_PATH_USER = "user.json"
 
-CONST_TOKEN = "token"
-CONST_PASSWORD = "password"
-CONST_CREATED_AT = "created_at"
-CONST_SEED = "seed"
-CONST_PRIVATE_KEY = "private_key"
-CONST_PUBLIC_KEY = "public_key"
+
+class UserField(StrEnum):
+    TOKEN = "token"
+    PASSWORD = "password"
+    CREATED_AT = "created_at"
+    SEED = "seed"
+    PRIVATE_KEY = "private_key"
+    PUBLIC_KEY = "public_key"
 
 HEADER_APP = "xApp"
 HEADER_USER = "xAuthUser"
@@ -83,7 +86,7 @@ def format_tokens_response(tokens: list) -> dict:
         safe_token = {
             "id": token.get("id"),
             "name": token.get("name", None),
-            CONST_CREATED_AT: token.get(CONST_CREATED_AT),
+            UserField.CREATED_AT: token.get(UserField.CREATED_AT),
             "last_used_at": token.get("last_used_at")
         }
         safe_tokens.append(safe_token)
