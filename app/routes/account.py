@@ -71,7 +71,8 @@ def update_account(request: Request, req: AccountUpdateRequest, auth: Auth = Dep
     - Replaces stored password, public key, and seed
 
     **Error Responses**:
-    - **401**: Invalid credentials (wrong old password) or invalid token
+    - **400**: Wrong old password
+    - **401**: Invalid token
     - **408**: Timestamp expired
     - **422**: Invalid request body or missing required fields
     - **429**: Rate limit exceeded (3/15min, 10/day)
@@ -83,7 +84,7 @@ def update_account(request: Request, req: AccountUpdateRequest, auth: Auth = Dep
 
     stored_pw = stored_user.get(UserField.PASSWORD)
     if hashlib.sha512((req.timestamp + stored_pw).encode()).hexdigest() != req.old_password:
-        raise HTTPException(status_code=401, detail=messages.invalidCredentials)
+        raise HTTPException(status_code=400, detail=messages.invalidCredentials)
 
     stored_user[UserField.PASSWORD] = req.password
     stored_user[UserField.PUBLIC_KEY] = req.public_key
@@ -104,7 +105,7 @@ def delete_account(req: AccountDeleteRequest, auth: Auth = Depends(verify_token)
 
     stored_pw = stored_user.get(UserField.PASSWORD)
     if hashlib.sha512((req.timestamp + stored_pw).encode()).hexdigest() != req.password:
-        raise HTTPException(status_code=401, detail=messages.invalidCredentials)
+        raise HTTPException(status_code=400, detail=messages.invalidCredentials)
 
     shutil.rmtree(user_path)
 

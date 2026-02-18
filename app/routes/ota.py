@@ -157,7 +157,7 @@ def delete_ota_key(req: OtaDeleteRequest, auth: Auth = Depends(verify_token)):
 
     stored_pw = stored_user.get(UserField.PASSWORD)
     if hashlib.sha512((req.timestamp + stored_pw).encode()).hexdigest() != req.password:
-        raise HTTPException(status_code=401, detail=messages.invalidCredentials)
+        raise HTTPException(status_code=400, detail=messages.invalidCredentials)
 
     del stored_user["ota"]
     with open(user_file, "w") as w:
