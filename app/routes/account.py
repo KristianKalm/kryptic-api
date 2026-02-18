@@ -72,7 +72,6 @@ def update_account(request: Request, req: AccountUpdateRequest, auth: Auth = Dep
 
     **Error Responses**:
     - **400**: Wrong old password
-    - **401**: Invalid token
     - **408**: Timestamp expired
     - **422**: Invalid request body or missing required fields
     - **429**: Rate limit exceeded (3/15min, 10/day)

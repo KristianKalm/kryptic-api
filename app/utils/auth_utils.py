@@ -31,7 +31,7 @@ def verify_app(
         x_app: str = Header(..., alias=HEADER_APP, convert_underscores=False),
 ):
     if x_app not in [app.get("name") for app in get_conf().get("apps", [])]:
-        raise HTTPException(status_code=401, detail=messages.appNotSupported)
+        raise HTTPException(status_code=400, detail=messages.appNotSupported)
     return x_app
 
 
@@ -49,7 +49,7 @@ def verify_token(
     try:
         ts = int(x_timestamp)
     except ValueError:
-        raise HTTPException(status_code=401, detail=messages.invalidToken)
+        raise HTTPException(status_code=400, detail=messages.invalidToken)
 
     if abs(get_utc_timestamp_ms() - ts) > 3_600_000:
         raise HTTPException(status_code=408, detail=messages.timestampExpired)

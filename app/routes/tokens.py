@@ -124,4 +124,4 @@ async def set_token_name(request: Request, auth: Auth = Depends(verify_token)):
                 with open(tokens_file, "w") as f:
                     json.dump(tokens, f)
                 return format_tokens_response(tokens)
-    raise HTTPException(status_code=401, detail=messages.tokenNotFound)
+    raise HTTPException(status_code=400, detail=messages.tokenNotFound)

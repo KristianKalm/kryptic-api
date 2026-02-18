@@ -103,7 +103,8 @@ def create_token(user: User, app=Depends(verify_app)):
     - Token is stored and can be used for subsequent authenticated requests
 
     **Error Responses**:
-    - **401**: Invalid credentials, wrong PIN, or PIN required but not provided
+    - **400**: Invalid credentials
+    - **403**: Wrong PIN, or PIN required but not provided
     - **404**: User not found
     - **422**: Invalid request body or missing required fields
     - **500**: Server error during authentication
@@ -122,9 +123,9 @@ def create_token(user: User, app=Depends(verify_app)):
 
     if stored_ota is not None:
         if user.pin is None:
-            raise HTTPException(status_code=401, detail=messages.pinIsRequired)
+            raise HTTPException(status_code=403, detail=messages.pinIsRequired)
         if not verify_ota_pin(stored_ota, user.pin):
-            raise HTTPException(status_code=401, detail=messages.wrongPin)
+            raise HTTPException(status_code=403, detail=messages.wrongPin)
 
     if user.timestamp is None or abs(get_utc_timestamp_ms() - user.timestamp) > 3_600_000:
         raise HTTPException(status_code=408, detail=messages.timestampExpired)
@@ -229,7 +230,7 @@ def delete_token(token: TokenRequest, auth: Auth = Depends(verify_token)):
     - Security cleanup after suspected token compromise
 
     **Error Responses**:
-    - **401**: Token not found or invalid authentication
+    - **400**: Token not found or invalid authentication
     - **422**: Invalid request body or missing id
     - **500**: Server error during token deletion
     """
@@ -245,4 +246,4 @@ def delete_token(token: TokenRequest, auth: Auth = Depends(verify_token)):
                 with open(tokens_file, "w") as f:
                     json.dump(updated_tokens, f)
                     return format_tokens_response(updated_tokens)
-    raise HTTPException(status_code=401, detail=messages.tokenNotFound)
+    raise HTTPException(status_code=400, detail=messages.tokenNotFound)
