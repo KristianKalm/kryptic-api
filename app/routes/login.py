@@ -133,7 +133,7 @@ def create_token(user: User, app=Depends(verify_app)):
         raise HTTPException(status_code=408, detail=messages.timestampExpired)
 
     if hashlib.sha512((str(user.timestamp) + stored_pw).encode()).hexdigest() != user.password:
-        raise HTTPException(status_code=401, detail=messages.invalidCredentials)
+        raise HTTPException(status_code=400, detail=messages.invalidCredentials)
 
     user_json["last_login_timestamp"] = user.timestamp
     with open(user_file, "w") as f:
