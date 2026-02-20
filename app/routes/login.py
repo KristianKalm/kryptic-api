@@ -140,6 +140,10 @@ def create_token(user: User, app=Depends(verify_app)):
     with open(user_file, "w") as f:
         json.dump(user_json, f)
 
+    attempts_file = user_path / FILE_LOGIN_ATTEMPTS
+    if attempts_file.exists():
+        attempts_file.unlink()
+
     unhashed_token, token_id = add_token(user_path)
     return {
         UserField.TOKEN: unhashed_token,
