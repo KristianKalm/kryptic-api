@@ -9,4 +9,6 @@ RUN pip install fastapi uvicorn python-multipart pyotp slowapi
 
 EXPOSE 11213
 
+VOLUME ["/app/appData", "/app/conf.json"]
+
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-11213}

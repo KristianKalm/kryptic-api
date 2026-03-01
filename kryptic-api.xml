@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>kryptic-api</Name>
+  <Repository>kalmkalm/kryptic-api</Repository>
+  <Registry>https://hub.docker.com/r/kalmkalm/kryptic-api/</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Overview>Kryptic API - FastAPI backend service for Kryptic apps.</Overview>
+  <Category>Tools:</Category>
+  <WebUI>http://[IP]:[PORT:11213]/docs</WebUI>
+  <ExtraParams>--pids-limit 2048</ExtraParams>
+
+  <!-- Port -->
+  <Config
+    Name="API Port"
+    Target="11213"
+    Default="11213"
+    Mode="tcp"
+    Description="Port the API listens on."
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">11213</Config>
+
+  <!-- Paths -->
+  <Config
+    Name="User Data"
+    Target="/app/appData"
+    Default="/mnt/user/appdata/kryptic-api/appData"
+    Mode="rw"
+    Description="Persistent storage for user data. REQUIRED — data is lost without this mount."
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">/mnt/user/appdata/kryptic-api/appData</Config>
+
+  <Config
+    Name="Config File"
+    Target="/app/conf.json"
+    Default="/mnt/user/appdata/kryptic-api/conf.json"
+    Mode="rw"
+    Description="Path to the conf.json configuration file on the host. Copy the default conf.json here before first start."
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">/mnt/user/appdata/kryptic-api/conf.json</Config>
+
+  <!-- Variables -->
+  <Config
+    Name="Timezone"
+    Target="TZ"
+    Default="Europe/London"
+    Mode=""
+    Description="Timezone for the container (e.g. Europe/Kiev, America/New_York)."
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="false">Europe/London</Config>
+
+  <Config
+    Name="API Listen Port"
+    Target="PORT"
+    Default="11213"
+    Mode=""
+    Description="Port uvicorn listens on inside the container. Must match the port mapping above."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">11213</Config>
+
+</Container>
