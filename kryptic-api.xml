@@ -36,15 +36,15 @@
     Mask="false">/mnt/user/appdata/kryptic-api/appData</Config>
 
   <Config
-    Name="Config File"
-    Target="/app/conf.json"
-    Default="/mnt/user/appdata/kryptic-api/conf.json"
+    Name="Config Directory"
+    Target="/app/config"
+    Default="/mnt/user/appdata/kryptic-api/config"
     Mode="rw"
-    Description="Path to the conf.json configuration file on the host. Copy the default conf.json here before first start."
+    Description="Directory containing conf.json. Copy your conf.json into this folder on the host before first start."
     Type="Path"
     Display="always"
     Required="true"
-    Mask="false">/mnt/user/appdata/kryptic-api/conf.json</Config>
+    Mask="false">/mnt/user/appdata/kryptic-api/config</Config>
 
   <!-- Variables -->
   <Config
