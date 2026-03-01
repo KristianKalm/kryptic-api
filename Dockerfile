@@ -3,12 +3,14 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY ./app /app/app
-COPY ./conf.json /app/appData/conf.json
+COPY ./default_conf.json /app/default_conf.json
+COPY ./entrypoint.sh /app/entrypoint.sh
 
-RUN pip install fastapi uvicorn python-multipart pyotp slowapi
+RUN pip install fastapi uvicorn python-multipart pyotp slowapi && \
+    chmod +x /app/entrypoint.sh
 
 EXPOSE 11213
 
 VOLUME ["/app/appData"]
 
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-11213}
+ENTRYPOINT ["/app/entrypoint.sh"]
