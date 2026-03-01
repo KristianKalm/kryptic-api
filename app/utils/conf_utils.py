@@ -4,7 +4,7 @@ from pathlib import Path
 
 _config = None
 
-FILE_PATH_CONF = "config/conf.json"
+FILE_PATH_CONF = "appData/conf.json"
 
 
 def load_conf(path=FILE_PATH_CONF):

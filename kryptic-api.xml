@@ -25,26 +25,15 @@
 
   <!-- Paths -->
   <Config
-    Name="User Data"
+    Name="App Data"
     Target="/app/appData"
     Default="/mnt/user/appdata/kryptic-api/appData"
     Mode="rw"
-    Description="Persistent storage for user data. REQUIRED — data is lost without this mount."
+    Description="Persistent storage for user data and conf.json. Copy your conf.json into this folder on the host before first start."
     Type="Path"
     Display="always"
     Required="true"
     Mask="false">/mnt/user/appdata/kryptic-api/appData</Config>
-
-  <Config
-    Name="Config Directory"
-    Target="/app/config"
-    Default="/mnt/user/appdata/kryptic-api/config"
-    Mode="rw"
-    Description="Directory containing conf.json. Copy your conf.json into this folder on the host before first start."
-    Type="Path"
-    Display="always"
-    Required="true"
-    Mask="false">/mnt/user/appdata/kryptic-api/config</Config>
 
   <!-- Variables -->
   <Config
