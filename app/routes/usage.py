@@ -1,14 +1,11 @@
-import json
-
 from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.models.auth import Auth
-from app.utils.auth_utils import verify_token, verify_app
-from app.utils.conf_utils import get_user_data_path, get_conf, get_app_conf
-
-FILE_PATH_USER_CONF = "user_conf.json"
+from app.utils.auth_utils import verify_token
+from app.utils.conf_utils import get_user_data_path
+from app.utils.usage_utils import get_user_usage_bytes, get_user_max_mb
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -53,14 +50,7 @@ def total_size(request: Request, auth: Auth = Depends(verify_token)):
     - **500**: Server error during size calculation
     """
     user_path = get_user_data_path(auth.username, auth.app)
-    total = sum(f.stat().st_size for f in user_path.rglob("*") if f.is_file())
-
-    max_mb = get_app_conf(auth.app).get("default_max_mb")
-    user_conf_file = user_path / FILE_PATH_USER_CONF
-    if user_conf_file.exists():
-        with open(user_conf_file) as f:
-            user_conf = json.load(f)
-        if "max_mb" in user_conf:
-            max_mb = user_conf["max_mb"]
-
-    return {"usage_size_bytes": total, "max_mb": max_mb}
+    return {
+        "usage_size_bytes": get_user_usage_bytes(user_path),
+        "max_mb": get_user_max_mb(user_path, auth.app),
+    }

@@ -8,6 +8,7 @@ from starlette.responses import PlainTextResponse
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token
 from app.utils.conf_utils import get_user_data_path
+from app.utils.usage_utils import check_storage_limit
 from app import messages
 
 router = APIRouter()
@@ -60,6 +61,8 @@ def save_file(
     file_location = (user_path / folder / filename).resolve()
     if not str(file_location).startswith(str(user_path.resolve()) + "/"):
         raise HTTPException(status_code=400, detail=messages.invalidPath)
+
+    check_storage_limit(user_path, auth.app, len(data.encode("utf-8")))
 
     file_location.parent.mkdir(parents=True, exist_ok=True)
     with open(file_location, "w", encoding="utf-8") as f:

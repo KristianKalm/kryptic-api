@@ -6,8 +6,8 @@ from slowapi.util import get_remote_address
 
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token
-
 from app.utils.conf_utils import get_user_data_path
+from app.utils.usage_utils import check_storage_limit
 from app import messages
 
 
@@ -196,6 +196,10 @@ def post_files(
     user_path = (user_base / folder).resolve()
     if not str(user_path).startswith(str(user_base.resolve()) + "/"):
         raise HTTPException(status_code=400, detail=messages.invalidPath)
+
+    incoming_bytes = sum(len(f.data.encode("utf-8")) for f in files)
+    check_storage_limit(user_base, auth.app, incoming_bytes)
+
     user_path.mkdir(parents=True, exist_ok=True)
 
     saved = []
