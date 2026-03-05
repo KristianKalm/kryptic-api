@@ -20,6 +20,13 @@ def get_conf():
     return _config
 
 
+def get_app_conf(app_name: str) -> dict:
+    for app in _config.get("apps", []):
+        if app.get("name") == app_name:
+            return app
+    return {}
+
+
 BASE_PATH = Path(__file__).resolve().parent.parent.parent
 
 

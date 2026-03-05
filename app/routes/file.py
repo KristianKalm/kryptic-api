@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Header, Form, Query, Body
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Header, Form, Query, Body, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from pydantic import BaseModel
 from starlette.responses import PlainTextResponse
@@ -9,6 +11,7 @@ from app.utils.conf_utils import get_user_data_path
 from app import messages
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 class TokenRequest(BaseModel):
@@ -17,7 +20,9 @@ class TokenRequest(BaseModel):
 
 
 @router.post("/file/{folder}/{filename}", tags=["file"])
+@limiter.limit("120/minute")
 def save_file(
+        request: Request,
         folder: str,
         filename: str,
         data: str = Body(..., media_type="text/plain"),
@@ -64,7 +69,9 @@ def save_file(
 
 
 @router.get("/file/{folder}/{filename}", tags=["file"])
+@limiter.limit("120/minute")
 def get_file(
+        request: Request,
         folder: str,
         filename: str,
         auth: Auth = Depends(verify_token)
@@ -110,7 +117,9 @@ def get_file(
 
 
 @router.delete("/file/{folder}/{filename}", tags=["file"])
+@limiter.limit("60/minute")
 def delete_file(
+        request: Request,
         folder: str,
         filename: str,
         auth: Auth = Depends(verify_token)

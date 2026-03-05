@@ -1,11 +1,15 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from app.utils.conf_utils import get_conf
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/info", tags=["info"])
-def info():
+@limiter.limit("30/minute")
+def info(request: Request):
     """
     Get server configuration and information.
 

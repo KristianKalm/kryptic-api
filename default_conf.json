@@ -3,11 +3,13 @@
   "apps": [
     {
       "name": "Wealthtracker",
-      "default_max_mb": 20
+      "default_max_mb": 20,
+      "register_enabled": true
     },
     {
       "name": "Mylif",
-      "default_max_mb": 200
+      "default_max_mb": 200,
+      "register_enabled": true
     }
   ]
 }

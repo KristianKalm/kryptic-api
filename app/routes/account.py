@@ -96,7 +96,8 @@ def update_account(request: Request, req: AccountUpdateRequest, auth: Auth = Dep
 
 
 @router.delete("/account", tags=["auth"])
-def delete_account(req: AccountDeleteRequest, auth: Auth = Depends(verify_token)):
+@limiter.limit("3/15minutes;5/day")
+def delete_account(request: Request, req: AccountDeleteRequest, auth: Auth = Depends(verify_token)):
     user_path = get_user_data_path(auth.username, auth.app)
     user_file = user_path / FILE_PATH_USER
     with open(user_file) as r:

@@ -1,9 +1,11 @@
 import hashlib
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 import json
 import uuid
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from pydantic import BaseModel
 
@@ -16,6 +18,7 @@ from app.utils.time_utils import get_utc_timestamp, get_utc_timestamp_ms
 from app import messages
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 FILE_LOGIN_ATTEMPTS = "login_attempts.json"
 _MAX_15MIN = 3
@@ -48,7 +51,8 @@ def check_and_record_login_attempt(user_path: Path):
 
 
 @router.post("/login", tags=["auth"])
-def create_token(user: User, app=Depends(verify_app)):
+@limiter.limit("3/15minutes;10/day")
+def create_token(request: Request, user: User, app=Depends(verify_app)):
     """
     Authenticate a user and create a new session token.
 
@@ -180,7 +184,8 @@ class TokenRequest(BaseModel):
 
 
 @router.delete("/token", tags=["auth"])
-def delete_token(token: TokenRequest, auth: Auth = Depends(verify_token)):
+@limiter.limit("30/minute")
+def delete_token(request: Request, token: TokenRequest, auth: Auth = Depends(verify_token)):
     """
     Delete (logout) a specific authentication token by ID.
 

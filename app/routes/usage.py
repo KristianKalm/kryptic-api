@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token, verify_app
 from app.utils.conf_utils import get_user_data_path, get_conf
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/usage", tags=["info"])
-def total_size(auth: Auth = Depends(verify_token)):
+@limiter.limit("30/minute")
+def total_size(request: Request, auth: Auth = Depends(verify_token)):
     """
     Get the total storage usage for the authenticated user.
 

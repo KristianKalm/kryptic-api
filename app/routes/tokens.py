@@ -1,6 +1,8 @@
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token, FILE_PATH_TOKENS, format_tokens_response
@@ -8,10 +10,12 @@ from app.utils.conf_utils import get_user_data_path
 from app import messages
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/tokens", tags=["auth"])
-def get_tokens(auth: Auth = Depends(verify_token)):
+@limiter.limit("30/minute")
+def get_tokens(request: Request, auth: Auth = Depends(verify_token)):
     """
     Get all active authentication tokens for the current user.
 
@@ -78,6 +82,7 @@ def get_tokens(auth: Auth = Depends(verify_token)):
 
 
 @router.put("/token/name", tags=["auth"])
+@limiter.limit("30/minute")
 async def set_token_name(request: Request, auth: Auth = Depends(verify_token)):
     """
     Set or update the name of an authentication token.

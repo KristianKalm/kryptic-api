@@ -1,6 +1,8 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token
@@ -18,10 +20,13 @@ class FilesDeleteRequest(BaseModel):
     files: List[str]
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/files/{folder:path}", tags=["file"])
+@limiter.limit("60/minute")
 def get_files(
+    request: Request,
     folder: str,
     start: int = Query(0, ge=0, description="Starting index for pagination"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of files to return"),
@@ -180,7 +185,9 @@ def get_files(
 
 
 @router.post("/files/{folder:path}", tags=["file"])
+@limiter.limit("30/minute")
 def post_files(
+    request: Request,
     folder: str,
     files: List[FileItem],
     auth: Auth = Depends(verify_token)
@@ -211,7 +218,9 @@ def post_files(
 
 
 @router.delete("/files/{folder:path}", tags=["file"])
+@limiter.limit("30/minute")
 def delete_files(
+    request: Request,
     folder: str,
     req: FilesDeleteRequest,
     auth: Auth = Depends(verify_token)

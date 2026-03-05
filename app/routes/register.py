@@ -9,7 +9,7 @@ from app.models.user import RegisterRequest, Encrypted
 from app.routes.login import add_token
 from app.utils.auth_utils import verify_app, FILE_PATH_USER, UserField
 from app.utils.captcha_utils import create_captcha, verify_captcha
-from app.utils.conf_utils import get_user_data_path
+from app.utils.conf_utils import get_user_data_path, get_app_conf
 from app.utils.time_utils import get_utc_timestamp
 from app import messages
 
@@ -39,6 +39,8 @@ def get_register_captcha(request: Request, app=Depends(verify_app)):
     The `captcha_id` and the solved `captcha_text` must be included in the
     POST /register request body. The captcha expires after 5 minutes.
     """
+    if not get_app_conf(app).get("register_enabled", True):
+        raise HTTPException(status_code=471, detail=messages.registerDisabled)
     captcha_id, captcha_image = create_captcha()
     return {"captcha_id": captcha_id, "captcha_image": captcha_image}
 

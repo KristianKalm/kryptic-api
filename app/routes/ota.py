@@ -1,8 +1,10 @@
 import hashlib
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token, FILE_PATH_USER, UserField
@@ -12,10 +14,12 @@ from app.utils.ota_utils import generate_ota_key, generate_ota_pin, verify_ota_p
 from app import messages
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/ota", tags=["auth"])
-def get_ota_key(auth: Auth = Depends(verify_token)):
+@limiter.limit("5/minute")
+def get_ota_key(request: Request, auth: Auth = Depends(verify_token)):
     """
     Generate a temporary OTA (One-Time Authentication) key for setup.
 
@@ -71,7 +75,8 @@ class OtaRequest(BaseModel):
 
 
 @router.post("/ota", tags=["auth"])
-def save_ota_key(ota_code: OtaRequest, auth: Auth = Depends(verify_token)):
+@limiter.limit("10/minute")
+def save_ota_key(request: Request, ota_code: OtaRequest, auth: Auth = Depends(verify_token)):
     """
     Confirm and activate OTA (One-Time Authentication) by verifying the PIN.
 
@@ -146,7 +151,8 @@ class OtaDeleteRequest(BaseModel):
 
 
 @router.delete("/ota", tags=["auth"])
-def delete_ota_key(req: OtaDeleteRequest, auth: Auth = Depends(verify_token)):
+@limiter.limit("5/minute")
+def delete_ota_key(request: Request, req: OtaDeleteRequest, auth: Auth = Depends(verify_token)):
     user_path = get_user_data_path(auth.username, auth.app)
     user_file = user_path / FILE_PATH_USER
     with open(user_file) as r:
