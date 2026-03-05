@@ -33,7 +33,10 @@ def set_user_max_mb(app: str, username: str, mb: int):
     conf = {}
     if user_conf_file.exists():
         with open(user_conf_file) as f:
-            conf = json.load(f)
+            try:
+                conf = json.load(f)
+            except json.JSONDecodeError:
+                conf = {}
 
     conf["max_mb"] = mb
 
