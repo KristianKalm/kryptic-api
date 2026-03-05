@@ -17,3 +17,8 @@ class User(BaseModel):
     private_key: Optional[Encrypted] = None
     pin: Optional[str] = None
     token_name: Optional[str] = None
+
+
+class RegisterRequest(User):
+    captcha_id: str
+    captcha_text: str
