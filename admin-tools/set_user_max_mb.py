@@ -13,7 +13,7 @@ import json
 import sys
 from pathlib import Path
 
-BASE_PATH = Path(__file__).resolve().parent
+BASE_PATH = Path(__file__).resolve().parent.parent
 USER_CONF_FILE = "user_conf.json"
 USER_FILE = "user.json"
 

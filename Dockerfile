@@ -5,7 +5,7 @@ WORKDIR /app
 COPY ./app /app/app
 COPY ./default_conf.json /app/default_conf.json
 COPY ./entrypoint.sh /app/entrypoint.sh
-COPY ./set_user_max_mb.py /app/set_user_max_mb.py
+COPY ./admin-tools /app/admin-tools
 
 RUN pip install fastapi uvicorn python-multipart pyotp slowapi fast_captcha pillow && \
     chmod +x /app/entrypoint.sh
