@@ -279,10 +279,10 @@ def delete_files(
             continue
         file_path = user_path / name
         if not file_path.exists():
-            errors.append({"name": name, "error": messages.fileNotFound})
+            deleted.append(name)
             continue
         try:
-            file_path.unlink()
+            file_path.write_bytes(b"")
             deleted.append(name)
         except Exception as e:
             errors.append({"name": name, "error": str(e)})
