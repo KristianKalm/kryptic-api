@@ -23,6 +23,65 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
+@router.get("/files/{folder:path}/index", tags=["file"])
+@limiter.limit("60/minute")
+def get_files_index(
+    request: Request,
+    folder: str,
+    auth: Auth = Depends(verify_token)
+):
+    """
+    Get the names and last-modified timestamps of all files in a folder, without content.
+
+    **Authentication Required**: Yes (via headers)
+
+    **Path Parameters**:
+    - **folder**: Folder path to list files from (required, e.g., "documents", "messages/2024")
+
+    **Response**:
+    ```json
+    {
+        "files": [
+            {"name": "message1.pgp", "time": 1705315800},
+            {"name": "message2.pgp", "time": 1705315700}
+        ]
+    }
+    ```
+
+    **Response Fields**:
+    - **files**: Array of file objects, sorted by modification time (newest first)
+      - **name**: File name
+      - **time**: Last modified UTC timestamp in seconds
+
+    **Behavior**:
+    - **Folder path is required** - root directory access is disabled
+    - Returns only files, not subdirectories
+    - Returns an empty list if the folder does not exist
+    - Does not return file content - use `GET /files/{folder}` for that
+
+    **Error Responses**:
+    - **401**: Invalid or missing authentication token
+    - **400**: Invalid folder path
+    - **500**: Server error during directory read operation
+    """
+    user_base = get_user_data_path(auth.username, auth.app)
+    user_path = (user_base / folder).resolve()
+    if not str(user_path).startswith(str(user_base.resolve()) + "/"):
+        raise HTTPException(status_code=400, detail=messages.invalidPath)
+    if not user_path.exists() or not user_path.is_dir():
+        return {"files": []}
+
+    try:
+        files = [
+            {"name": f.name, "time": int(f.stat().st_mtime)}
+            for f in user_path.iterdir() if f.is_file()
+        ]
+        files.sort(key=lambda f: f["time"], reverse=True)
+        return {"files": files}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/files/{folder:path}", tags=["file"])
 @limiter.limit("60/minute")
 def get_files(
