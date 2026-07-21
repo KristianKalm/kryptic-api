@@ -1,5 +1,4 @@
 import hashlib
-import json
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -10,6 +9,7 @@ from app.models.auth import Auth
 from app.utils.auth_utils import verify_token, FILE_PATH_USER, UserField
 
 from app.utils.conf_utils import get_user_data_path
+from app.utils.json_store import edit_json
 from app.utils.ota_utils import generate_ota_key, generate_ota_pin, verify_ota_pin
 from app import messages
 
@@ -59,14 +59,11 @@ def get_ota_key(request: Request, auth: Auth = Depends(verify_token)):
     """
     user_path = get_user_data_path(auth.username, auth.app)
     user_file = user_path / FILE_PATH_USER
-    with open(user_file) as r:
-        stored_user = json.load(r)
-    if stored_user.get("ota"):
-        raise HTTPException(status_code=400, detail=messages.otaAlreadySetUp)
-    ota_key = generate_ota_key()
-    stored_user["temp_ota"] = ota_key
-    with open(user_file, "w") as w:
-        json.dump(stored_user, w)
+    with edit_json(user_file) as ref:
+        if ref.data.get("ota"):
+            raise HTTPException(status_code=400, detail=messages.otaAlreadySetUp)
+        ota_key = generate_ota_key()
+        ref.data["temp_ota"] = ota_key
     return {"ota": ota_key}
 
 
@@ -130,17 +127,15 @@ def save_ota_key(request: Request, ota_code: OtaRequest, auth: Auth = Depends(ve
     """
     user_path = get_user_data_path(auth.username, auth.app)
     user_file = user_path / FILE_PATH_USER
-    with open(user_file) as r:
-        stored_user = json.load(r)
+    with edit_json(user_file) as ref:
+        stored_user = ref.data
         temp_ota = stored_user.get("temp_ota")
         if temp_ota is None:
             raise HTTPException(status_code=400, detail=messages.otaNoOngoingSetup)
         if verify_ota_pin(temp_ota, ota_code.pin):
             stored_user["ota"] = stored_user["temp_ota"]
             del stored_user["temp_ota"]
-            with open(user_file, "w") as w:
-                json.dump(stored_user, w)
-                return {"message": messages.otaConfirmed}
+            return {"message": messages.otaConfirmed}
 
     raise HTTPException(status_code=400, detail=messages.otaWrongPin)
 
@@ -155,18 +150,16 @@ class OtaDeleteRequest(BaseModel):
 def delete_ota_key(request: Request, req: OtaDeleteRequest, auth: Auth = Depends(verify_token)):
     user_path = get_user_data_path(auth.username, auth.app)
     user_file = user_path / FILE_PATH_USER
-    with open(user_file) as r:
-        stored_user = json.load(r)
+    with edit_json(user_file) as ref:
+        stored_user = ref.data
 
-    if not stored_user.get("ota"):
-        raise HTTPException(status_code=400, detail=messages.otaNotSetUp)
+        if not stored_user.get("ota"):
+            raise HTTPException(status_code=400, detail=messages.otaNotSetUp)
 
-    stored_pw = stored_user.get(UserField.PASSWORD)
-    if hashlib.sha512((req.timestamp + stored_pw).encode()).hexdigest() != req.password:
-        raise HTTPException(status_code=400, detail=messages.invalidCredentials)
+        stored_pw = stored_user.get(UserField.PASSWORD)
+        if hashlib.sha512((req.timestamp + stored_pw).encode()).hexdigest() != req.password:
+            raise HTTPException(status_code=400, detail=messages.invalidCredentials)
 
-    del stored_user["ota"]
-    with open(user_file, "w") as w:
-        json.dump(stored_user, w)
+        del stored_user["ota"]
 
     return {"message": messages.otaRemoved}

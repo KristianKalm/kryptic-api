@@ -32,3 +32,11 @@ BASE_PATH = Path(__file__).resolve().parent.parent.parent
 
 def get_user_data_path(username, app):
     return BASE_PATH / "appData" / app / "users" / username
+
+
+def get_share_data_path(share_id, app):
+    return BASE_PATH / "appData" / app / "shares" / share_id
+
+
+def get_share_code_path(code, app):
+    return BASE_PATH / "appData" / app / "shareCodes" / f"{code}.json"

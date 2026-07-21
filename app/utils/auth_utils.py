@@ -4,9 +4,10 @@ from hashlib import sha1, sha512
 from fastapi import Header, HTTPException
 from app.models.auth import Auth
 from app.utils.conf_utils import get_conf, get_user_data_path
-import json
+from app.utils.json_store import edit_json
 
 from app.utils.time_utils import get_utc_timestamp, get_utc_timestamp_ms
+from app.utils.validation import is_valid_username
 from app import messages
 
 FILE_PATH_TOKENS = "tokens.json"
@@ -43,6 +44,9 @@ def verify_token(
 ):
     verify_app(x_app)
 
+    if not is_valid_username(x_auth_user):
+        raise HTTPException(status_code=401, detail=messages.invalidToken)
+
     user_path = get_user_data_path(x_auth_user, x_app)
     tokens_file = user_path / FILE_PATH_TOKENS
 
@@ -55,17 +59,14 @@ def verify_token(
         raise HTTPException(status_code=408, detail=messages.timestampExpired)
 
     if tokens_file.exists():
-        with open(tokens_file) as f:
-            tokens = json.load(f)
-            for item in tokens:
+        with edit_json(tokens_file, default=[]) as ref:
+            for item in ref.data:
                 token = sha512((x_timestamp + item["token"]).encode()).hexdigest()
                 if x_auth_token == token:
                     if ts <= item.get("last_timestamp", 0):
                         raise HTTPException(status_code=408, detail=messages.timestampExpired)
                     item["last_timestamp"] = ts
                     item["last_used_at"] = get_utc_timestamp()
-                    with open(tokens_file, "w") as f:
-                        json.dump(tokens, f)
                     return Auth(username=x_auth_user, app=x_app, token_id=item["id"])
 
     raise HTTPException(status_code=401, detail=messages.invalidToken)

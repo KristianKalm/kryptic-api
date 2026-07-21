@@ -1,5 +1,3 @@
-import json
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -7,6 +5,7 @@ from slowapi.util import get_remote_address
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token, FILE_PATH_TOKENS, format_tokens_response
 from app.utils.conf_utils import get_user_data_path
+from app.utils.json_store import edit_json, read_json
 from app import messages
 
 router = APIRouter()
@@ -75,9 +74,8 @@ def get_tokens(request: Request, auth: Auth = Depends(verify_token)):
     user_path = get_user_data_path(auth.username, auth.app)
     tokens_file = user_path / FILE_PATH_TOKENS
     if tokens_file.exists():
-        with open(tokens_file) as f:
-            all_tokens = json.load(f)
-            return format_tokens_response(all_tokens)
+        all_tokens = read_json(tokens_file, default=[])
+        return format_tokens_response(all_tokens)
     raise HTTPException(status_code=404, detail=messages.somethingWentWrong)
 
 
@@ -121,12 +119,9 @@ async def set_token_name(request: Request, auth: Auth = Depends(verify_token)):
     tokens_file = user_path / FILE_PATH_TOKENS
     name = (await request.body()).decode("utf-8")
     if tokens_file.exists():
-        with open(tokens_file) as f:
-            tokens = json.load(f)
-        for t in tokens:
-            if t.get("id") == auth.token_id:
-                t["name"] = name
-                with open(tokens_file, "w") as f:
-                    json.dump(tokens, f)
-                return format_tokens_response(tokens)
+        with edit_json(tokens_file, default=[]) as ref:
+            for t in ref.data:
+                if t.get("id") == auth.token_id:
+                    t["name"] = name
+                    return format_tokens_response(ref.data)
     raise HTTPException(status_code=400, detail=messages.tokenNotFound)

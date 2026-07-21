@@ -11,6 +11,7 @@ from app.models.auth import Auth
 from app.models.user import Encrypted
 from app.utils.auth_utils import verify_token, FILE_PATH_USER, UserField
 from app.utils.conf_utils import get_user_data_path
+from app.utils.json_store import edit_json
 from app import messages
 
 router = APIRouter()
@@ -78,19 +79,16 @@ def update_account(request: Request, req: AccountUpdateRequest, auth: Auth = Dep
     """
     user_path = get_user_data_path(auth.username, auth.app)
     user_file = user_path / FILE_PATH_USER
-    with open(user_file) as r:
-        stored_user = json.load(r)
+    with edit_json(user_file) as ref:
+        stored_user = ref.data
 
-    stored_pw = stored_user.get(UserField.PASSWORD)
-    if hashlib.sha512((req.timestamp + stored_pw).encode()).hexdigest() != req.old_password:
-        raise HTTPException(status_code=400, detail=messages.invalidCredentials)
+        stored_pw = stored_user.get(UserField.PASSWORD)
+        if hashlib.sha512((req.timestamp + stored_pw).encode()).hexdigest() != req.old_password:
+            raise HTTPException(status_code=400, detail=messages.invalidCredentials)
 
-    stored_user[UserField.PASSWORD] = req.password
-    stored_user[UserField.PUBLIC_KEY] = req.public_key
-    stored_user[UserField.SEED] = req.seed.model_dump_json()
-
-    with open(user_file, "w") as f:
-        json.dump(stored_user, f)
+        stored_user[UserField.PASSWORD] = req.password
+        stored_user[UserField.PUBLIC_KEY] = req.public_key
+        stored_user[UserField.SEED] = req.seed.model_dump_json()
 
     return {"message": messages.accountUpdated}
 

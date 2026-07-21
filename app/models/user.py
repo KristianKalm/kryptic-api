@@ -1,5 +1,7 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from app.utils.validation import is_valid_username
 
 
 class Encrypted(BaseModel):
@@ -17,6 +19,13 @@ class User(BaseModel):
     private_key: Optional[Encrypted] = None
     pin: Optional[str] = None
     token_name: Optional[str] = None
+
+    @field_validator("username")
+    @classmethod
+    def _validate_username(cls, value: str) -> str:
+        if not is_valid_username(value):
+            raise ValueError("invalid username")
+        return value
 
 
 class RegisterRequest(User):

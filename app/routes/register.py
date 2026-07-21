@@ -1,7 +1,6 @@
 import hashlib
 
 from fastapi import APIRouter, HTTPException, Depends, Request
-import json
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -10,6 +9,7 @@ from app.routes.login import add_token
 from app.utils.auth_utils import verify_app, FILE_PATH_USER, UserField
 from app.utils.captcha_utils import create_captcha, verify_captcha
 from app.utils.conf_utils import get_user_data_path, get_app_conf
+from app.utils.json_store import write_json
 from app.utils.time_utils import get_utc_timestamp
 from app import messages
 
@@ -99,14 +99,12 @@ def register(request: Request, user: RegisterRequest, app=Depends(verify_app)):
     user_file = user_path / FILE_PATH_USER
     if user_file.exists():
         raise HTTPException(status_code=400, detail=messages.userAlreadyExists)
-    with open(user_file, "w") as f:
-        data = {
-            UserField.PASSWORD: user.password,
-            UserField.CREATED_AT: get_utc_timestamp(),
-            UserField.PRIVATE_KEY: user.private_key.model_dump_json(),
-            UserField.PUBLIC_KEY: user.public_key,
-            UserField.SEED: user.seed.model_dump_json(),
-        }
-        json.dump(data, f)
+    write_json(user_file, {
+        UserField.PASSWORD: user.password,
+        UserField.CREATED_AT: get_utc_timestamp(),
+        UserField.PRIVATE_KEY: user.private_key.model_dump_json(),
+        UserField.PUBLIC_KEY: user.public_key,
+        UserField.SEED: user.seed.model_dump_json(),
+    })
     unhashed_token, token_id = add_token(user_path, user.token_name)
     return {"token": unhashed_token, "token_id": token_id}

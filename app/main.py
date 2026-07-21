@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.responses import JSONResponse
 
-from app.routes import register, files, usage, login, tokens, info, file, ota, account
+from app.routes import register, files, usage, login, tokens, info, file, ota, account, shares
 from app.utils.conf_utils import load_conf
 
 load_conf()
@@ -57,3 +57,4 @@ app.include_router(files.router)
 app.include_router(usage.router)
 app.include_router(ota.router)
 app.include_router(account.router)
+app.include_router(shares.router)

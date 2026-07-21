@@ -2,7 +2,6 @@ import hashlib
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Depends, Request
-import json
 import uuid
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -13,6 +12,7 @@ from app.models.auth import Auth
 from app.models.user import User, Encrypted
 from app.utils.auth_utils import verify_app, FILE_PATH_TOKENS, FILE_PATH_USER, UserField, verify_token, format_tokens_response
 from app.utils.conf_utils import get_user_data_path
+from app.utils.json_store import edit_json
 from app.utils.ota_utils import verify_ota_pin
 from app.utils.time_utils import get_utc_timestamp, get_utc_timestamp_ms
 from app import messages
@@ -31,23 +31,18 @@ def check_and_record_login_attempt(user_path: Path):
     now = get_utc_timestamp_ms()
     attempts_file = user_path / FILE_LOGIN_ATTEMPTS
 
-    attempts = []
-    if attempts_file.exists():
-        with open(attempts_file) as f:
-            attempts = json.load(f)
-
     cutoff_24h = now - _WINDOW_24H_MS
-    attempts = [ts for ts in attempts if ts > cutoff_24h]
+    with edit_json(attempts_file, default=[]) as ref:
+        attempts = [ts for ts in ref.data if ts > cutoff_24h]
 
-    if len([ts for ts in attempts if ts > now - _WINDOW_15MIN_MS]) >= _MAX_15MIN:
-        raise HTTPException(status_code=429, detail=messages.tooManyRequests)
+        if len([ts for ts in attempts if ts > now - _WINDOW_15MIN_MS]) >= _MAX_15MIN:
+            raise HTTPException(status_code=429, detail=messages.tooManyRequests)
 
-    if len(attempts) >= _MAX_24H:
-        raise HTTPException(status_code=429, detail=messages.tooManyRequests)
+        if len(attempts) >= _MAX_24H:
+            raise HTTPException(status_code=429, detail=messages.tooManyRequests)
 
-    attempts.append(now)
-    with open(attempts_file, "w") as f:
-        json.dump(attempts, f)
+        attempts.append(now)
+        ref.data = attempts
 
 
 @router.post("/login", tags=["auth"])
@@ -120,29 +115,27 @@ def create_token(request: Request, user: User, app=Depends(verify_app)):
 
     check_and_record_login_attempt(user_path)
 
-    with open(user_file) as f:
-        user_json = json.load(f)
+    with edit_json(user_file) as ref:
+        user_json = ref.data
         stored_pw = user_json.get(UserField.PASSWORD)
         stored_ota = user_json.get("ota")
 
-    if stored_ota is not None:
-        if user.pin is None:
-            raise HTTPException(status_code=403, detail=messages.pinIsRequired)
-        if not verify_ota_pin(stored_ota, user.pin):
-            raise HTTPException(status_code=403, detail=messages.wrongPin)
+        if stored_ota is not None:
+            if user.pin is None:
+                raise HTTPException(status_code=403, detail=messages.pinIsRequired)
+            if not verify_ota_pin(stored_ota, user.pin):
+                raise HTTPException(status_code=403, detail=messages.wrongPin)
 
-    if user.timestamp is None or abs(get_utc_timestamp_ms() - user.timestamp) > 3_600_000:
-        raise HTTPException(status_code=408, detail=messages.timestampExpired)
+        if user.timestamp is None or abs(get_utc_timestamp_ms() - user.timestamp) > 3_600_000:
+            raise HTTPException(status_code=408, detail=messages.timestampExpired)
 
-    if user.timestamp <= user_json.get("last_login_timestamp", 0):
-        raise HTTPException(status_code=408, detail=messages.timestampExpired)
+        if user.timestamp <= user_json.get("last_login_timestamp", 0):
+            raise HTTPException(status_code=408, detail=messages.timestampExpired)
 
-    if hashlib.sha512((str(user.timestamp) + stored_pw).encode()).hexdigest() != user.password:
-        raise HTTPException(status_code=400, detail=messages.invalidCredentials)
+        if hashlib.sha512((str(user.timestamp) + stored_pw).encode()).hexdigest() != user.password:
+            raise HTTPException(status_code=400, detail=messages.invalidCredentials)
 
-    user_json["last_login_timestamp"] = user.timestamp
-    with open(user_file, "w") as f:
-        json.dump(user_json, f)
+        user_json["last_login_timestamp"] = user.timestamp
 
     attempts_file = user_path / FILE_LOGIN_ATTEMPTS
     if attempts_file.exists():
@@ -169,13 +162,8 @@ def add_token(user_path: Path, token_name: str = None):
     if token_name:
         token["name"] = token_name
     tokens_file = user_path / FILE_PATH_TOKENS
-    tokens = []
-    if tokens_file.exists():
-        with open(tokens_file) as f:
-            tokens = json.load(f)
-    tokens.append(token)
-    with open(tokens_file, "w") as f:
-        json.dump(tokens, f)
+    with edit_json(tokens_file, default=[]) as ref:
+        ref.data.append(token)
     return unhashed_token, token_id
 
 
@@ -246,13 +234,10 @@ def delete_token(request: Request, token: TokenRequest, auth: Auth = Depends(ver
     user_path = get_user_data_path(auth.username, auth.app)
     tokens_file = user_path / FILE_PATH_TOKENS
     if tokens_file.exists():
-        with open(tokens_file) as f:
-            tokens = json.load(f)
+        with edit_json(tokens_file, default=[]) as ref:
             # Find token by id
-            found = any(t.get("id") == token.id for t in tokens)
+            found = any(t.get("id") == token.id for t in ref.data)
             if found:
-                updated_tokens = [t for t in tokens if t.get("id") != token.id]
-                with open(tokens_file, "w") as f:
-                    json.dump(updated_tokens, f)
-                    return format_tokens_response(updated_tokens)
+                ref.data = [t for t in ref.data if t.get("id") != token.id]
+                return format_tokens_response(ref.data)
     raise HTTPException(status_code=400, detail=messages.tokenNotFound)
