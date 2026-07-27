@@ -10,9 +10,9 @@ from pydantic import BaseModel
 
 from app.models.auth import Auth
 from app.models.user import User, Encrypted
-from app.utils.auth_utils import verify_app, FILE_PATH_TOKENS, FILE_PATH_USER, UserField, verify_token, format_tokens_response
+from app.utils.auth_utils import verify_app, FILE_PATH_TOKENS, FILE_PATH_TOKEN_ACTIVITY, FILE_PATH_USER, UserField, verify_token, format_tokens_response
 from app.utils.conf_utils import get_user_data_path
-from app.utils.json_store import edit_json
+from app.utils.json_store import edit_json, read_json
 from app.utils.ota_utils import verify_ota_pin
 from app.utils.time_utils import get_utc_timestamp, get_utc_timestamp_ms
 from app import messages
@@ -239,5 +239,10 @@ def delete_token(request: Request, token: TokenRequest, auth: Auth = Depends(ver
             found = any(t.get("id") == token.id for t in ref.data)
             if found:
                 ref.data = [t for t in ref.data if t.get("id") != token.id]
-                return format_tokens_response(ref.data)
+                activity_file = user_path / FILE_PATH_TOKEN_ACTIVITY
+                if activity_file.exists():
+                    with edit_json(activity_file, default={}) as activity_ref:
+                        activity_ref.data.pop(token.id, None)
+                activity = read_json(activity_file, default={})
+                return format_tokens_response(ref.data, activity)
     raise HTTPException(status_code=400, detail=messages.tokenNotFound)

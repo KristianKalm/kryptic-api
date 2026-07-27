@@ -31,7 +31,7 @@ def get_files_index(
     auth: Auth = Depends(verify_token)
 ):
     """
-    Get the names and last-modified timestamps of all files in a folder, without content.
+    Get the names, last-modified timestamps, and sizes of all files in a folder, without content.
 
     **Authentication Required**: Yes (via headers)
 
@@ -42,8 +42,8 @@ def get_files_index(
     ```json
     {
         "files": [
-            {"name": "message1.pgp", "time": 1705315800},
-            {"name": "message2.pgp", "time": 1705315700}
+            {"name": "message1.pgp", "time": 1705315800, "size": 1024},
+            {"name": "message2.pgp", "time": 1705315700, "size": 512}
         ]
     }
     ```
@@ -52,6 +52,7 @@ def get_files_index(
     - **files**: Array of file objects, sorted by modification time (newest first)
       - **name**: File name
       - **time**: Last modified UTC timestamp in seconds
+      - **size**: File size in bytes
 
     **Behavior**:
     - **Folder path is required** - root directory access is disabled
@@ -72,10 +73,11 @@ def get_files_index(
         return {"files": []}
 
     try:
-        files = [
-            {"name": f.name, "time": int(f.stat().st_mtime)}
-            for f in user_path.iterdir() if f.is_file()
-        ]
+        files = []
+        for f in user_path.iterdir():
+            if f.is_file():
+                stat = f.stat()
+                files.append({"name": f.name, "time": int(stat.st_mtime), "size": stat.st_size})
         files.sort(key=lambda f: f["time"], reverse=True)
         return {"files": files}
     except Exception as e:

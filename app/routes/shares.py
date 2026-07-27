@@ -575,7 +575,7 @@ def get_share_files_index(
         auth: Auth = Depends(verify_token)
 ):
     """
-    List file names and modification times in a shared-space folder,
+    List file names, modification times, and sizes in a shared-space folder,
     without content. Any member can read.
     """
     share_path, share = _load_share(share_id, auth.app)
@@ -585,10 +585,11 @@ def get_share_files_index(
     if not folder_path.exists() or not folder_path.is_dir():
         return {"files": []}
 
-    files = [
-        {"name": f.name, "time": int(f.stat().st_mtime)}
-        for f in folder_path.iterdir() if f.is_file()
-    ]
+    files = []
+    for f in folder_path.iterdir():
+        if f.is_file():
+            stat = f.stat()
+            files.append({"name": f.name, "time": int(stat.st_mtime), "size": stat.st_size})
     files.sort(key=lambda f: f["time"], reverse=True)
     return {"files": files}
 

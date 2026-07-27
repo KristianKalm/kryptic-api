@@ -3,7 +3,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.models.auth import Auth
-from app.utils.auth_utils import verify_token, FILE_PATH_TOKENS, format_tokens_response
+from app.utils.auth_utils import verify_token, FILE_PATH_TOKENS, FILE_PATH_TOKEN_ACTIVITY, format_tokens_response
 from app.utils.conf_utils import get_user_data_path
 from app.utils.json_store import edit_json, read_json
 from app import messages
@@ -75,7 +75,8 @@ def get_tokens(request: Request, auth: Auth = Depends(verify_token)):
     tokens_file = user_path / FILE_PATH_TOKENS
     if tokens_file.exists():
         all_tokens = read_json(tokens_file, default=[])
-        return format_tokens_response(all_tokens)
+        activity = read_json(user_path / FILE_PATH_TOKEN_ACTIVITY, default={})
+        return format_tokens_response(all_tokens, activity)
     raise HTTPException(status_code=404, detail=messages.somethingWentWrong)
 
 
@@ -123,5 +124,6 @@ async def set_token_name(request: Request, auth: Auth = Depends(verify_token)):
             for t in ref.data:
                 if t.get("id") == auth.token_id:
                     t["name"] = name
-                    return format_tokens_response(ref.data)
+                    activity = read_json(user_path / FILE_PATH_TOKEN_ACTIVITY, default={})
+                    return format_tokens_response(ref.data, activity)
     raise HTTPException(status_code=400, detail=messages.tokenNotFound)
