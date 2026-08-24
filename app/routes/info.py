@@ -38,4 +38,10 @@ def info(request: Request):
     **Error Responses**:
     - **500**: Server error during configuration retrieval
     """
-    return {"conf": get_conf()}
+    return {
+        "conf": get_conf(),
+        "request_client": request.client.host if request.client else None,
+        "x_real_ip": request.headers.get("x-real-ip"),
+        "x_forwarded_for": request.headers.get("x-forwarded-for"),
+        "cf_connecting_ip": request.headers.get("cf-connecting-ip"),
+    }
