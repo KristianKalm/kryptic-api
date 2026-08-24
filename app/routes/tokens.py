@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
+from app.limiter import limiter
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token, FILE_PATH_TOKENS, FILE_PATH_TOKEN_ACTIVITY, format_tokens_response
 from app.utils.conf_utils import get_user_data_path
@@ -9,7 +8,6 @@ from app.utils.json_store import edit_json, read_json
 from app import messages
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/tokens", tags=["auth"])

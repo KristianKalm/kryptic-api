@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from app.limiter import limiter, get_real_ip
 from app.utils.conf_utils import get_conf
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/info", tags=["info"])
@@ -40,6 +38,7 @@ def info(request: Request):
     """
     return {
         "conf": get_conf(),
+        "real_ip": get_real_ip(request),
         "request_client": request.client.host if request.client else None,
         "x_real_ip": request.headers.get("x-real-ip"),
         "x_forwarded_for": request.headers.get("x-forwarded-for"),

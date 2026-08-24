@@ -4,9 +4,8 @@ import shutil
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
+from app.limiter import limiter
 from app.models.auth import Auth
 from app.models.user import Encrypted
 from app.utils.auth_utils import verify_token, FILE_PATH_USER, UserField
@@ -15,7 +14,6 @@ from app.utils.json_store import edit_json
 from app import messages
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 class AccountDeleteRequest(BaseModel):

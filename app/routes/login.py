@@ -3,11 +3,10 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 import uuid
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from pydantic import BaseModel
 
+from app.limiter import limiter
 from app.models.auth import Auth
 from app.models.user import User, Encrypted
 from app.utils.auth_utils import verify_app, FILE_PATH_TOKENS, FILE_PATH_TOKEN_ACTIVITY, FILE_PATH_USER, UserField, verify_token, format_tokens_response
@@ -18,7 +17,6 @@ from app.utils.time_utils import get_utc_timestamp, get_utc_timestamp_ms
 from app import messages
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 FILE_LOGIN_ATTEMPTS = "login_attempts.json"
 _MAX_15MIN = 3

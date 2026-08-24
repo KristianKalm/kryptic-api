@@ -1,14 +1,12 @@
 from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
+from app.limiter import limiter
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token
 from app.utils.conf_utils import get_user_data_path
 from app.utils.usage_utils import get_user_usage_bytes, get_user_max_mb
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/usage", tags=["info"])

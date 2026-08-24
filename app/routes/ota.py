@@ -2,9 +2,8 @@ import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
+from app.limiter import limiter
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token, FILE_PATH_USER, UserField
 
@@ -14,7 +13,6 @@ from app.utils.ota_utils import generate_ota_key, generate_ota_pin, verify_ota_p
 from app import messages
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/ota", tags=["auth"])

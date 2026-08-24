@@ -1,9 +1,8 @@
 import hashlib
 
 from fastapi import APIRouter, HTTPException, Depends, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
+from app.limiter import limiter
 from app.models.user import RegisterRequest, Encrypted
 from app.routes.login import add_token
 from app.utils.auth_utils import verify_app, FILE_PATH_USER, UserField
@@ -14,7 +13,6 @@ from app.utils.time_utils import get_utc_timestamp
 from app import messages
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/register", tags=["auth"])

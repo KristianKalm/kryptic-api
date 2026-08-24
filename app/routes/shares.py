@@ -8,10 +8,9 @@ from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from starlette.responses import PlainTextResponse
 
+from app.limiter import limiter
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token, FILE_PATH_USER, UserField
 from app.utils.conf_utils import get_share_code_path, get_share_data_path, get_user_data_path
@@ -21,7 +20,6 @@ from app.utils.usage_utils import get_user_max_mb, get_user_usage_bytes
 from app import messages
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 FILE_PATH_SHARE = "share.json"
 FILE_PATH_USER_SHARES = "shares.json"

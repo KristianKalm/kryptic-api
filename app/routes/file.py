@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Header, Form, Query, Body, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-
 from pydantic import BaseModel
 from starlette.responses import PlainTextResponse
 
+from app.limiter import limiter
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token
 from app.utils.conf_utils import get_user_data_path
@@ -12,7 +10,6 @@ from app.utils.usage_utils import check_storage_limit
 from app import messages
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 class TokenRequest(BaseModel):

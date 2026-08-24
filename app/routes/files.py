@@ -1,9 +1,8 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
+from app.limiter import limiter
 from app.models.auth import Auth
 from app.utils.auth_utils import verify_token
 from app.utils.conf_utils import get_user_data_path
@@ -20,7 +19,6 @@ class FilesDeleteRequest(BaseModel):
     files: List[str]
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/files/{folder:path}/index", tags=["file"])
