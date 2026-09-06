@@ -44,7 +44,7 @@ def check_and_record_login_attempt(user_path: Path):
 
 
 @router.post("/login", tags=["auth"])
-@limiter.limit("3/15minutes;10/day")
+@limiter.limit("10/5minutes;500/day")
 def create_token(request: Request, user: User, app=Depends(verify_app)):
     """
     Authenticate a user and create a new session token.
